@@ -1,0 +1,17 @@
+<class>
+ <keyword> class </keyword>
+ <identifier> Foo </identifier>
+ <symbol> { </symbol>
+ <subroutineDec>
+  <keyword> function </keyword>
+  <keyword> int </keyword>
+  <identifier> Bar </identifier>
+  <symbol> ( </symbol>
+  <symbol> ) </symbol>
+  <symbol> { </symbol>
+  <subroutineBody>
+  </subroutineBody>
+  <symbol> } </symbol>
+ </subroutineDec>
+ <symbol> } </symbol>
+</class>
