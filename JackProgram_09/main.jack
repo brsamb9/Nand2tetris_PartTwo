@@ -1,0 +1,20 @@
+/*
+What to do:
+Two circles in 2D box 
+with collision detection -> 
+Atom class 
+
+As JackCompiler.sh doesn't work for me on Ubunutu - let continue to make our own! 
+*/
+
+class Main {
+    function void main(){
+        var Game game;
+
+        let game = Game.new();
+        do game.run();
+        do game.dispose();
+
+        return;
+    }
+}

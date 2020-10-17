@@ -1,0 +1,62 @@
+class Atom {
+    field int x, y, r; // init pos and radius (center of circle)
+
+    constructor Atom new(int xInit, int yInit, int rInit){
+        // drawCircle in OS screen class
+        let x = xInit; let y = yInit; let r = rInit;
+
+        do Screen.setColor(true);
+        do Screen.drawCircle(x, y, r);
+        return this;
+    }
+
+    method void dispose(){
+        do Memory.deAlloc(this);
+        return;
+    } 
+
+
+    method void move_up(){
+        if ( (y - r) > 1 ) {
+            do remove_circle();
+
+            do Screen.setColor(true); // Add shifted circle
+            do Screen.drawCircle(x, y + 2, r);
+        }
+        return;
+    }
+
+    method void move_down(){
+        if ( (y + r) < 254 ) {
+            do remove_circle();
+
+            do Screen.setColor(true); // Add shifted circle
+            do Screen.drawCircle(x, y - 2, r);
+        }
+        return;
+    }
+
+    method void move_right(){
+        if ( (x + r) < 510 ) {
+            do remove_circle();
+
+            do Screen.setColor(true); // Add shifted circle
+            do Screen.drawCircle(x + 2, y, r);
+        }
+        return;
+    }
+    method void move_left(){
+        if ( (x - r) > 1 ) {
+            do remove_circle();
+
+            do Screen.setColor(true); // Add shifted circle
+            do Screen.drawCircle(x - 2, y, r);
+        }
+        return;
+    }
+    function void remove_circle(){
+        do Screen.setColor(false);  // Removes entire circle - probably not the most efficient way to 'shift'
+        do Screen.drawCircle(x, y, r);
+        return;
+    }
+}

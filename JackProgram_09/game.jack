@@ -1,0 +1,76 @@
+class Game {
+    field Atom atom_control, atom_other;
+    field int direction;
+
+    constructor Game new(){
+        let atom_control = Atom.new(10, 20, 10);
+        let atom_other = Atom.new(100, 20, 5);
+        let direction = 0;
+        return this;
+    }
+
+    method void dispose(){
+        do atom.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method void move_atom(Atom atom){
+        if (direction = 1) { do atom.move_up(); }
+        if (direction = 2) { do atom.move_down(); }
+        if (direction = 3) { do atom.move_right(); }
+        if (direction = 4) { do atom.move_left(); }
+
+        do Sys.wait(5);
+        return;
+    }
+
+    method void run(){
+        var char key;
+        var boolean exit;
+        let exit = false;
+
+        while (~exit){
+            while (key = 0){
+                let key = Keyboard.keyPressed();
+                do move_atom(atom_control);
+            }
+            if (key = 81) { let exit = true; } // q
+            if (key = 131) { let direction = 1;} // up
+            if (key = 133) { let direction = 2;} // down
+            if (key = 132) { let direction = 3;} // right 
+            if (key = 130) { let direction = 4;} // left
+
+            while (~(key = 0)){
+                let key = Keyboard.keyPressed();
+                do move_atom(atom_control);
+                
+                // Collision detection
+                let has_collided = check_collision(atom_other);
+                if (has_collided = true){
+                    // Slimpy move the other atom in the same direction
+                    do move_atom(atom_other);
+                }
+            }
+        }
+        return;
+    }
+
+    function bool collided(Atom other){
+        var bool has_collided;
+
+        var int del_x, del_y, del_dis;
+        let del_x = other.x - x;
+        let del_y = other.y - y;
+        let del_dis = Math.sqrt( ((del_x * del_x) + (del_y * del_y)) );
+
+        if (del_dis <= r){
+            has_collided = true;
+        } 
+        if (del_dis > r){
+            has_collided = false;
+        }
+
+        return has_collided;
+    }
+}
