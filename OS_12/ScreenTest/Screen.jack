@@ -1,0 +1,251 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/12/Screen.jack
+
+/**
+ * A library of functions for displaying graphics on the screen.
+ * The Hack physical screen consists of 512 rows (indexed 0..511, top to bottom)
+ * of 256 pixels each (indexed 0..255, left to right). The top left pixel on 
+ * the screen is indexed (0,0).
+ */
+class Screen {
+    static boolean colour;
+    static int MemMap;
+    static Array baseTwo;
+
+    /** Initializes the Screen. */
+    function void init() {
+        let colour = true;
+        let MemMap = 16384;
+
+        /** Returns an array of 2^n */
+        let baseTwo = Array.new(16);
+        let baseTwo[0] = 1;
+        let baseTwo[1] = 2;
+        let baseTwo[2] = 4;
+        let baseTwo[3] = 8;
+        let baseTwo[4] = 16;
+        let baseTwo[5] = 32;
+        let baseTwo[6] = 64;
+        let baseTwo[7] = 128;
+        let baseTwo[8] = 256;
+        let baseTwo[9] = 512;
+        let baseTwo[10] = 1024;
+        let baseTwo[11] = 2048;
+        let baseTwo[12] = 4096;
+        let baseTwo[13] = 8192;
+        let baseTwo[14] = 16384;
+        let baseTwo[15] = 32767+1;
+        return;
+    }
+
+    /** Erases the entire screen. */
+    function void clearScreen() {
+        // 256 x 512 pixels
+        do Screen.setColor(false);
+        do Screen.drawRectangle(0, 0, 511, 255);
+
+        do Screen.setColor(true);
+        return;
+    }
+
+    /** Sets the current color, to be used for all subsequent drawXXX commands.
+     *  Black is represented by true, white by false. */
+    function void setColor(boolean b) {
+        let colour = b; 
+        return;
+    }
+
+    /** Draws the (x,y) pixel, using the current color. */
+    function void drawPixel(int x, int y) {
+        // x: col, y: row;
+        var int address, value, bitChange;
+        
+        let address = (32 * y) + (x / 16);
+        let value = Memory.peek(MemMap + address);
+
+        // Work in bytes, need to find bit required to change (avoid changing others) 
+        let bitChange = x - (16 * (x / 16));
+
+        if (colour) {
+            let value = value | baseTwo[bitChange];
+        }
+        else {
+            let value = value & (~baseTwo[bitChange]);
+        }
+        //
+        do Memory.poke(MemMap + address, value);
+
+        return;
+    }
+
+    /** Draws a line from pixel (x1,y1) to pixel (x2,y2), using the current color. */
+    function void drawLine(int x1, int y1, int x2, int y2) {
+        var int temp, dx, dy, diff, rightTick, upDownTick;
+        var boolean down;
+
+        // corner cases
+        do Screen.errorInputCheck(x1, y1, x2, y2);
+
+        // 
+        let colour = true;
+        // If straight line, use optimised function
+        if ((x1 = x2) | (y1 = y2)) {
+            do Screen.drawStraightLine(x1, y1, x2, y2);
+        }
+
+        // Need to sus out direction (NE, SE, NW, SW)
+        // invert to simplify to two main diagonal direction
+        // left to right & down to up
+        
+        if (x1 > x2) {
+            let temp = x2;
+            let x2 = x1;
+            let x1 = temp;
+
+            let temp = y2;
+            let y2 = y1;
+            let y1 = temp; 
+        }
+
+        let dx = x2 - x1;
+        let dy = y2 - y1;
+
+        if (dy < 0) {
+            let down = false;
+        } else {
+            let down = true;
+        }
+
+        let diff = (rightTick * dy) - (upDownTick * dx);
+        while (true) {
+            if ((x1 + rightTick) > x2){
+                return;
+            }
+
+            if (down) {
+                if ((y1 - upDownTick) < y2) {
+                    return;
+                }
+                do Screen.drawPixel(x1 + rightTick, y1 - upDownTick);
+            }
+            else {
+                if ((y1 - upDownTick) < y2) {
+                    return;
+                }
+                do Screen.drawPixel(x1 + rightTick, y1 + upDownTick);
+            }
+
+            if (diff < 0) {
+                // Move right
+                let rightTick = rightTick + 1;
+                let diff = diff + dy;
+            } else {
+                let upDownTick = upDownTick + 1;
+                let diff = diff - dx;
+            }
+
+        }
+    }
+
+    function void drawStraightLine(int x1, int y1, int x2, int y2) {
+        var int start, end;
+
+        // Set to true again, in case it was called first
+        let colour = true;
+        do Screen.errorInputCheck(x1, y1, x2, y2);
+        
+        // Quick check, else go to drawLine function
+        if ((~(x1 = x2)) & (~(y1 = y2))) {
+            do Screen.drawLine(x1, y1, x2, y2);
+        }
+
+        
+        if (x1 = x2) {
+            let start = Math.min(y1, y2);
+            let end = Math.max(y1, y2);
+
+            while (start < (end + 1)) {
+                do Screen.drawPixel(x1, start);
+                let start = start + 1;
+            }
+        } else {
+            let start = Math.min(x1, x2);
+            let end = Math.max(x1, x2);
+
+            while (start < (end + 1)) {
+                do Screen.drawPixel(start, y1);
+                let start = start + 1;
+            }
+        }
+        return;
+    }
+
+
+
+    /** Draws a filled rectangle whose top left corner is (x1, y1)
+     * and bottom right corner is (x2,y2), using the current color. */
+    function void drawRectangle(int x1, int y1, int x2, int y2) {
+        var int startY;
+
+        // corner cases
+        do errorInputCheck(x1, y1, x2, y2);
+        // Error extension
+        if ((x1 > x2) | (y1 > y2)) {
+            // Voids the contract of the function
+            do Sys.error(4);
+        }
+
+        // rasterscan 
+        
+        let startY = y1;
+
+        while (startY > y2){
+            do Screen.drawStraightLine(x1, startY, x2, startY);
+            let startY = startY + 1;
+        }
+
+        return;
+    }
+
+    function void errorInputCheck(int x1, int y1, int x2, int y2){
+        // corner cases
+        if ((x1 < 0) | (x2 < 0) | (y1 < 0) | (y2 < 0)) {
+            // need to be a positive number
+            do Sys.error(4);
+        }
+        if ((x1 > 511) | (x2 > 511) | (y1 > 255) | (y2 > 255)) {
+            // need to be a below number of pixel row / cols
+            do Sys.error(4);
+        }
+        return;
+    }
+
+    /** Draws a filled circle of radius r<=181 around (x,y), using the current color. */
+    function void drawCircle(int x, int y, int r) {
+        var int dy, x1, x2, sqrt;
+        // corner cases
+        if ((x < 0) | (x > 511) | (y < 0) | (y > 255) | (r > 180)) {
+            // Invalid input - r < 181 to avoid overflow
+            do Sys.error(5);
+        }
+
+        
+        let dy = -r;
+        while (~(dy = r)) {
+            // Pythagorean theorem to solve x1, x2
+            let sqrt = Math.sqrt((r * r) - (dy * dy));
+
+            let x1 = x - sqrt;
+            let x2 = x + sqrt;
+
+            let y = y + dy;
+
+            do Screen.drawStraightLine(x1, y, x2, y);
+
+            let dy = dy + 1;
+        }
+        return;
+    }
+}
